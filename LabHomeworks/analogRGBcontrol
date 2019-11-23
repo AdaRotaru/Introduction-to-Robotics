@@ -1,0 +1,42 @@
+const int ledRed=9;
+const int ledGreen=10;
+const int ledBlue=11;
+const int potRed=A2;
+const int potGreen=A1;
+const int potBlue=A0;
+int VpotR;
+int VpotG;
+int VpotB;
+int VledR;
+int VledG;
+int VledB;
+void setup() {
+  pinMode(potRed, INPUT);
+  pinMode(potGreen, INPUT);
+  pinMode(potBlue, INPUT);
+  pinMode(ledRed, OUTPUT);
+  pinMode(ledGreen, OUTPUT);
+  pinMode(ledBlue, OUTPUT);
+ }
+
+void loop() {
+  VpotR = analogRead(potRed);
+  VpotG = analogRead(potGreen);
+  VpotB = analogRead(potBlue);
+  VledR = map(VpotR, 0, 1023, 0, 255);
+  VledG = map(VpotG, 0, 1023, 0, 255);
+  VledB = map(VpotB, 0, 1023, 0, 255);
+  
+  setColor(VledR, VledG, VledB);
+ 
+
+  
+  
+}
+  
+void setColor (int red, int blue, int green){
+  analogWrite (ledRed, red);
+  analogWrite (ledBlue, blue);
+  analogWrite (ledGreen, green);
+  
+}
