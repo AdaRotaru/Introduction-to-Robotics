@@ -1,4 +1,7 @@
 analogRGBcontrol: In this project we controled the colors from a RGB led with 3 potentiometers. Every potentiometer was responsible with a 
                   primary color; combining them made new colors. First I initialized the variables (6 for the RGB led and 6 for the 
                   potentiometers). Then I defined the input and output in void start up. In the loop I memorized the value from each 
-                  potentiometer for each color, i mapped the values and I used a function (created outside the loop) to set the color.  
+                  potentiometer for each color, i mapped the values and I used a function (created outside the loop) to set the color.
+            
+knockDetect_music: In this project I played a Christmas song, 5 seconds after a knock is detected by a passive buzzer. Using the 
+                   pushButton i stop the song whenever i choose to press it. 
