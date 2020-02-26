@@ -1,0 +1,639 @@
+#define NOTE_C4  262   
+#define NOTE_D4  294
+#define NOTE_E4  330
+#define NOTE_F4  349
+#define NOTE_G4  392
+#define NOTE_A4  440
+#define NOTE_B4  494
+#define NOTE_C5  523
+#define NOTE_D5  587
+#define NOTE_E5  659
+#define NOTE_F5  698
+#define NOTE_G5  784
+#define NOTE_A5  880
+#define NOTE_B5  988
+
+
+#include <TimeLib.h>
+#include <EEPROM.h>
+#include<Wire.h>
+#include "RTClib.h"
+#define USE_ARDUINO_INTERRUPTS true
+#include <PulseSensorPlayground.h>
+#include <LiquidCrystal.h>
+
+
+#define STANDARD_HOUR 1
+#define STANDARD_MINUTE 1
+
+#define CONTRAST 60
+
+#define MAX_YEAR 2030
+#define LOWER_YEAR 1970
+
+#define MAX_MONTH 12
+#define LOWER_MONTH 1
+
+#define LOWER_DAY 1
+
+#define MAX_HOUR 24
+#define MAX_MINUTE 59
+
+#define LOWER_HOUR 1
+#define LOWER_MINUTE 1
+int maxDay;
+
+byte heart[8] = {
+ 0b00000,
+ 0b01010,
+ 0b11111,
+ 0b11111,
+ 0b11111,
+ 0b01110,
+ 0b00100,
+ 0b00000
+ };
+
+//song
+int notes[] = {     
+   NOTE_E4, NOTE_G4, NOTE_A4, NOTE_A4, 0, 
+   NOTE_A4, NOTE_B4, NOTE_C5, NOTE_C5, 0, 
+   NOTE_C5, NOTE_D5, NOTE_B4, NOTE_B4, 0,
+   NOTE_A4, NOTE_G4, NOTE_A4, 0,
+   
+   NOTE_E4, NOTE_G4, NOTE_A4, NOTE_A4, 0, 
+   NOTE_A4, NOTE_B4, NOTE_C5, NOTE_C5, 0, 
+   NOTE_C5, NOTE_D5, NOTE_B4, NOTE_B4, 0,
+   NOTE_A4, NOTE_G4, NOTE_A4, 0,
+   
+   NOTE_E4, NOTE_G4, NOTE_A4, NOTE_A4, 0, 
+   NOTE_A4, NOTE_C5, NOTE_D5, NOTE_D5, 0, 
+   NOTE_D5, NOTE_E5, NOTE_F5, NOTE_F5, 0,
+   NOTE_E5, NOTE_D5, NOTE_E5, NOTE_A4, 0,
+   
+   NOTE_A4, NOTE_B4, NOTE_C5, NOTE_C5, 0, 
+   NOTE_D5, NOTE_E5, NOTE_A4, 0, 
+   NOTE_A4, NOTE_C5, NOTE_B4, NOTE_B4, 0,
+   NOTE_C5, NOTE_A4, NOTE_B4, 0,
+
+   NOTE_A4, NOTE_A4, 
+   //Repeat of first part
+   NOTE_A4, NOTE_B4, NOTE_C5, NOTE_C5, 0, 
+   NOTE_C5, NOTE_D5, NOTE_B4, NOTE_B4, 0,
+   NOTE_A4, NOTE_G4, NOTE_A4, 0,
+
+   NOTE_E4, NOTE_G4, NOTE_A4, NOTE_A4, 0, 
+   NOTE_A4, NOTE_B4, NOTE_C5, NOTE_C5, 0, 
+   NOTE_C5, NOTE_D5, NOTE_B4, NOTE_B4, 0,
+   NOTE_A4, NOTE_G4, NOTE_A4, 0,
+   
+   NOTE_E4, NOTE_G4, NOTE_A4, NOTE_A4, 0, 
+   NOTE_A4, NOTE_C5, NOTE_D5, NOTE_D5, 0, 
+   NOTE_D5, NOTE_E5, NOTE_F5, NOTE_F5, 0,
+   NOTE_E5, NOTE_D5, NOTE_E5, NOTE_A4, 0,
+   
+   NOTE_A4, NOTE_B4, NOTE_C5, NOTE_C5, 0, 
+   NOTE_D5, NOTE_E5, NOTE_A4, 0, 
+   NOTE_A4, NOTE_C5, NOTE_B4, NOTE_B4, 0,
+   NOTE_C5, NOTE_A4, NOTE_B4, 0,
+   //End of Repeat
+
+   NOTE_E5, 0, 0, NOTE_F5, 0, 0,
+   NOTE_E5, NOTE_E5, 0, NOTE_G5, 0, NOTE_E5, NOTE_D5, 0, 0,
+   NOTE_D5, 0, 0, NOTE_C5, 0, 0,
+   NOTE_B4, NOTE_C5, 0, NOTE_B4, 0, NOTE_A4,
+
+   NOTE_E5, 0, 0, NOTE_F5, 0, 0,
+   NOTE_E5, NOTE_E5, 0, NOTE_G5, 0, NOTE_E5, NOTE_D5, 0, 0,
+   NOTE_D5, 0, 0, NOTE_C5, 0, 0,
+   NOTE_B4, NOTE_C5, 0, NOTE_B4, 0, NOTE_A4
+};
+int duration[] = {         
+  125, 125, 250, 125, 125, 
+  125, 125, 250, 125, 125,
+  125, 125, 250, 125, 125,
+  125, 125, 375, 125, 
+  
+  125, 125, 250, 125, 125, 
+  125, 125, 250, 125, 125,
+  125, 125, 250, 125, 125,
+  125, 125, 375, 125, 
+  
+  125, 125, 250, 125, 125, 
+  125, 125, 250, 125, 125,
+  125, 125, 250, 125, 125,
+  125, 125, 125, 250, 125,
+
+  125, 125, 250, 125, 125, 
+  250, 125, 250, 125, 
+  125, 125, 250, 125, 125,
+  125, 125, 375, 375,
+
+  250, 125,
+  //Rpeat of First Part
+  125, 125, 250, 125, 125,
+  125, 125, 250, 125, 125,
+  125, 125, 375, 125, 
+  
+  125, 125, 250, 125, 125, 
+  125, 125, 250, 125, 125,
+  125, 125, 250, 125, 125,
+  125, 125, 375, 125, 
+  
+  125, 125, 250, 125, 125, 
+  125, 125, 250, 125, 125,
+  125, 125, 250, 125, 125,
+  125, 125, 125, 250, 125,
+
+  125, 125, 250, 125, 125, 
+  250, 125, 250, 125, 
+  125, 125, 250, 125, 125,
+  125, 125, 375, 375,
+  //End of Repeat
+  
+  250, 125, 375, 250, 125, 375,
+  125, 125, 125, 125, 125, 125, 125, 125, 375,
+  250, 125, 375, 250, 125, 375,
+  125, 125, 125, 125, 125, 500,
+
+  250, 125, 375, 250, 125, 375,
+  125, 125, 125, 125, 125, 125, 125, 125, 375,
+  250, 125, 375, 250, 125, 375,
+  125, 125, 125, 125, 125, 500
+};
+
+
+//LCD
+const int RS = 12;
+const int enable = 11;
+const int d4 = 5;
+const int d5 = 4;
+const int d6 = 3;
+const int d7 = 2;
+int contrast = 35;
+LiquidCrystal lcd(RS, enable, d4, d5, d6, d7);
+
+//RTC_MODULE
+RTC_DS1307 rtc;
+const int pinSDA = A4;
+const int pinSCL = A5;
+
+//Pulse Sensor
+PulseSensorPlayground pulseSensor;
+const int PULSE_INPUT = A0;
+const byte RATE_SIZE = 4; 
+byte rates[RATE_SIZE]; 
+byte rateSpot = 0;
+long lastBeat = 0; 
+float beatsPerMinute;
+int beatAvg;
+
+//BUTTONS
+const int pinPlus = 7;
+const int pinMinus = 8;
+const int pinOk = 6;
+const int pinAlarm = 9;
+
+int plusButton = 1;
+int lastPlusButton = 1;
+
+int minusButton = 1;
+int lastMinusButton = 1;
+
+int okButton = 1;
+int lastOkButton = 1;
+
+int alarmButton = 1;
+int lastAlarmButton = 1;
+
+unsigned long lastDebounceTime = 0;
+unsigned long debounceDelay = 50;
+
+//BUZZER
+int buzzerTone = 1000;
+const int pinBuzzer = 10;
+const int songspeed = 1.5;
+
+bool alarmSet = false;
+unsigned long alarmDelay = 5000;
+
+
+int hourAlarm(){
+  if (EEPROM[0]==0){
+    return STANDARD_HOUR;
+  }
+  else{
+    return EEPROM[0];
+  }
+}
+
+int minAlarm(){
+  if (EEPROM[1]==0){
+    return STANDARD_MINUTE;
+  }
+  else{
+    return EEPROM[1];
+  }
+}
+
+void saveHourAlarm (int h) {
+  EEPROM[0] = h;
+}
+
+void saveMinAlarm (int m) {
+  EEPROM[1] = m;
+}
+
+void setup() {
+  Serial.begin(9600);
+  Wire.begin();
+
+   pulseSensor.analogInput(PulseWire);   
+  pulseSensor.setThreshold(Threshold);  
+  
+  analogWrite(A0, contrast);
+  lcd.begin(16, 2);
+  
+  rtc.begin();
+ 
+ if(! rtc.begin())
+ {
+   lcd.print("Couldn't dind RTC");
+   while(1);
+ }
+
+  
+  if(! rtc.isrunning())
+  {
+    lcd.print("RTC is NOT runnig!");
+  }
+ 
+   
+  pinMode(pinBuzzer, OUTPUT);
+ 
+  //Buttons
+  pinMode(pinPlus, INPUT_PULLUP);
+  pinMode(pinMinus, INPUT_PULLUP);
+  pinMode(pinOk, INPUT_PULLUP);
+  pinMode(pinAlarm, INPUT_PULLUP);
+
+  pulseSensor.analogInput(PULSE_INPUT);
+//  pulseSensor.setThreshold(THRESHOLD);
+
+rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+DateTime now = rtc.now();
+
+}
+bool okButtonClicked() {
+  int reading = digitalRead(pinOk);
+  if (reading != lastOkButton) {
+    lastDebounceTime = millis();
+  }
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading != okButton) {
+      okButton = reading;
+      if (okButton == HIGH) {
+        return true;
+      }
+    }
+  }
+  lastOkButton = reading;
+  return false;
+}
+
+bool alarmButtonClicked() {
+  int reading = digitalRead(pinAlarm);
+  if (reading != lastAlarmButton) {
+    lastDebounceTime = millis();
+  }
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading != alarmButton) {
+      alarmButton = reading;
+      if (alarmButton == HIGH) {
+        return true;
+      }
+    }
+  }
+  lastAlarmButton = reading;
+  return false;
+}
+
+bool plusButtonClicked() {
+  int reading = digitalRead(pinPlus);
+  if (reading != lastPlusButton) {
+    lastDebounceTime = millis();
+  }
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading != plusButton) {
+      plusButton = reading;
+      if (plusButton == HIGH) {
+        return true;
+      }
+    }
+  }
+  lastPlusButton = reading;
+  return false;
+}
+
+bool minusButtonClicked() {
+  int reading = digitalRead(pinMinus);
+  if (reading != lastMinusButton) {
+    lastDebounceTime = millis();
+  }
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading != minusButton) {
+      minusButton = reading;
+      if (minusButton == HIGH) {
+        return true;
+      }
+    }
+  }
+  lastMinusButton = reading;
+  return false;
+}
+
+int setYear() {
+  int y = 2020;
+  while (!okButtonClicked()) {
+    lcd.print("    Settings");
+    lcd.setCursor(0, 1);
+    lcd.print("Change year:");
+    lcd.print(y, DEC);
+    if (plusButtonClicked()) {
+      y = y + 1;
+      if (y > MAX_YEAR) {
+        y = LOWER_YEAR;
+      }
+    }
+    if (minusButtonClicked()) {
+      y = y - 1;
+      if (y < LOWER_YEAR) {
+        y = MAX_YEAR;
+      }
+    } 
+   
+  }
+  return y; 
+}
+
+bool skipYear(int y) {
+  if ((y%400==0) || (y%4==0 && !(y%100==0))) {
+    return true;
+  }
+  else 
+    return false;
+}
+
+int setMonth() {
+  int m = 1;
+  while (!okButtonClicked()) {
+    lcd.print("    Settings");
+    lcd.setCursor(0, 1);
+    lcd.print("Change month:");
+    lcd.print(m, DEC);
+    if (plusButtonClicked()) {
+      m = m + 1;
+      if (m > MAX_MONTH) {
+        m = LOWER_MONTH;
+      }
+    }
+    if (minusButtonClicked()) {
+      m = m - 1;
+      if (m < LOWER_MONTH) {
+        m = MAX_MONTH;
+      }
+    }
+   // if ( !okButtonClicked()) {
+    //  realClock();
+    //}  
+  }
+  return m; 
+}
+
+int setDay(int m, int y) {
+    int d = 1;
+    if (m == 2) {
+      if (skipYear(y)) {
+        maxDay = 29;
+      }
+      else {
+        maxDay = 28;
+      }
+    }
+    else {
+      if (m == 1 || m == 3 || m == 5 || m == 7 || m == 8 || m == 10 || m == 12) {
+        maxDay = 31;
+      }
+      else {
+        maxDay = 30;
+      }
+    }
+  while (!okButtonClicked()) {
+    lcd.print("    Settings");
+    lcd.setCursor(0, 1);
+    lcd.print("Change day:");
+    lcd.print(d, DEC);
+    if (plusButtonClicked()) {
+      d = d + 1;
+      if (d > maxDay) {
+        d = LOWER_DAY;
+      }
+    }
+    if (minusButtonClicked()) {
+      d = d - 1;
+      if (d < LOWER_MONTH) {
+        d = maxDay;
+      }
+    }  
+  }
+  return d; 
+}
+
+
+int setHour () {
+  int h = 1;
+  while (!okButtonClicked()) {
+    lcd.print("    Settings");
+    lcd.setCursor(0, 1);
+    lcd.print("Change hour:");
+    lcd.print(h, DEC);
+    if (plusButtonClicked()) {
+      h = h + 1;
+      if (h > MAX_HOUR) {
+        h = LOWER_HOUR;
+      }
+    }
+    if (minusButtonClicked()) {
+      h = h - 1;
+      if (h < LOWER_HOUR) {
+        h = MAX_HOUR;
+      }
+    }  
+  }
+  lcd.clear();
+  return h; 
+}
+
+int setMinute () {
+  int m = 1;
+  while (!okButtonClicked()) {
+    lcd.print("    Settings");
+    lcd.setCursor(0, 1);
+    lcd.print("Change min:");
+    lcd.print(m, DEC);
+    if (plusButtonClicked()) {
+      m = m + 1;
+      if (m > MAX_MINUTE) {
+        m = LOWER_MINUTE;
+      }
+    }
+    if (minusButtonClicked()) {
+      m = m - 1;
+      if (m < LOWER_MINUTE) {
+        m = MAX_MINUTE;
+      }
+    }  
+  }
+  lcd.clear();
+  return m; 
+}
+
+void settTime() {  
+  int newYear = setYear();
+  int newMonth = setMonth();
+  int newDay = setDay(newMonth, newYear);
+  int newHour = setHour();
+  int newMinute = setMinute();
+  rtc.adjust(DateTime(newYear, newMonth, newDay, newHour, newMinute, 0));   
+  lcd.clear();
+  
+}
+
+void showAlarm() {
+    
+  int hAlarm = hourAlarm();
+  int mAlarm = minAlarm();
+  analogWrite(A0, contrast);
+  lcd.setCursor(0, 0);
+ 
+  lcd.print("Alarm ");
+  if(alarmSet) {
+    lcd.print("        ON");
+  }
+  else {
+    lcd.print("       OFF");
+  }
+  lcd.setCursor(0, 1);
+  if (hAlarm < 10) {
+    lcd.print("0");
+  }
+  lcd.print(hAlarm, DEC);
+  lcd.print(':');
+  if (mAlarm < 10) {
+    lcd.print("0");
+  }
+  lcd.print(mAlarm, DEC);
+   
+}
+
+void setAlarm() {
+  unsigned int alarmClickedTime = millis();
+  while (!alarmButtonClicked() && (millis() - alarmClickedTime < alarmDelay)) {
+    if(plusButtonClicked() || minusButtonClicked()) {
+      alarmSet = !alarmSet; 
+    }
+    if (okButtonClicked()) {
+        saveHourAlarm(setHour());
+        saveMinAlarm(setMinute());
+    }   
+    showAlarm();  
+  }
+}
+
+void alarmSound() {
+  for (int i=0;i<203;i++){             
+  int wait = duration[i] * songspeed;
+  tone(pinBuzzer,notes[i],wait);          
+  delay(wait);}             
+    
+}
+
+
+ void realClock() {
+  lcd.setCursor(0,0);
+  lcd.clear();
+  
+  
+  lcd.setCursor(0, 0);
+  lcd.clear();
+  DateTime now = rtc.now();
+
+  if (now.day() < 10) {
+    lcd.print("0");
+  }
+  lcd.print(now.day(), DEC);
+  lcd.print('/');
+  
+  if (now.month() < 10) {
+    lcd.print("0");
+  }
+  lcd.print(now.month(), DEC);
+  lcd.print('/');
+  
+  lcd.print(now.year(), DEC);
+
+  lcd.setCursor(0, 1);
+  if (now.hour() < 10) {
+    lcd.print("0");
+  }
+  lcd.print(now.hour(), DEC);
+  lcd.print(':');
+  
+  if (now.minute() < 10) {
+    lcd.print("0");
+  }
+  lcd.print(now.minute(), DEC);
+  lcd.print(':');
+
+ if (now.second() < 10) {
+    lcd.print("0");
+ }
+  lcd.print(now.second(), DEC);
+  
+
+  }
+
+void heart_beat(){
+  
+
+  if (now.hour() == alarmHour && now.minute() == alarmMinute && alarmSet) {
+    lcd.setCursor(0, 0);
+  lcd.print("Heart Beats");
+  lcd.setCursor(0, 1);
+  lcd.print(first_beat, last_beat);
+  }
+  
+}
+
+void loop() {
+  DateTime now = rtc.now();
+  realClock();
+  int alarmHour = hourAlarm();
+  int alarmMinute = minAlarm();
+  if (okButtonClicked()) {
+    lcd.clear();
+    settTime();
+  }
+  if (alarmButtonClicked()) {
+    lcd.clear();
+    setAlarm();
+  }
+  if (now.hour() == alarmHour && now.minute() == alarmMinute && alarmSet) {
+    alarmSound();
+    heart_beat();
+  }
+ 
+}
+  
+  
+ 
